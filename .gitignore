@@ -1,0 +1,10 @@
+.idea/
+*.pyc
+data/*
+build/*
+project.egg-info/*
+setup.py
+dbs/
+eggs/
+logs/
+twistd.pid
