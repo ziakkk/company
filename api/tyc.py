@@ -23,7 +23,10 @@ def get_data_from_db(search):
 
     documents = sorted(cursor, key=lambda _doc: _doc['upt'], reverse=True)
     doc = documents[0] if documents else {}
-    doc.pop('upt', None) or doc.pop('typ', None)
+
+    doc.pop('_id', None)
+    doc.pop('upt', None)
+    doc.pop('typ', None)
 
     client.close()
 
@@ -63,7 +66,7 @@ def interval_seconds(from_typ='tianyancha'):
 @app.route(r'/api/corp/search', methods=['GET'])
 def get_corp_info():
     project = 'company'
-    scrapyd = ScrapydAPI()
+    scrapyd = ScrapydAPI('http://192.168.216.170:6800')
     word = request.args.get('word')
     resp = {'result': {}, 'is_success': False, 'message': ''}
 
@@ -103,4 +106,8 @@ def get_corp_info():
 
     return jsonify(resp)
 
+
+if __name__ == '__main__':
+    # Run this file, must comment of `import tyc` line in api/__init__.py file
+    app.run(host='0.0.0.0', port=8880, debug=True)
 
