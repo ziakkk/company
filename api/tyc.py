@@ -86,7 +86,7 @@ def get_corp_info():
         return jsonify(resp)
 
     start_time = time.time()
-    jobid = scrapyd.schedule(project, spider='tianyancha', search=word)
+    jobid = scrapyd.schedule(project, spider='tianyancha', search=word.encode('u8'))
 
     while (time.time() - start_time) <= 15:
         time.sleep(1)

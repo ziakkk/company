@@ -42,7 +42,7 @@ class TianyanchaSpider(scrapy.Spider):
         return dict([ck.split('=', 1) for ck in self.settings['TIANYANCHA_COOKIE'].split(';')])
 
     def start_requests(self):
-        key_urlencode = urllib.quote(self.search_key.encode('u8'))
+        key_urlencode = urllib.quote(self.search_key)
         search_url = 'https://www.tianyancha.com/search?key={}&checkFrom=searchBox'.format(key_urlencode)
 
         headers = deepcopy(self._headers)
