@@ -19,6 +19,7 @@ class TianyanchaSpider(scrapy.Spider):
         self.search_key = kwargs.pop('search', None)
         self.cookie = kwargs.pop('cookie', None)
         self.user_agent = UserAgent().random
+        self._typ = 'tianyancha'
 
         self.log('*' * 50, 20)
         self.log(self.search_key, 20)
@@ -72,13 +73,17 @@ class TianyanchaSpider(scrapy.Spider):
             headers=headers, cookies=self.cookies, callback=self.parse_corp
         )
 
+        self.schedule_db.insert({
+            'typ': self._typ, 'upt': datetime.now(), 'word': self.search_key
+        })
+
     def parse_corp(self, response):
         eid_regex = re.compile(r'company/(\d+)')
         eid_m = eid_regex.search(response.url)
         eid = eid_m.group(1) if eid_m else None
 
         document = {'upt': datetime.now()}
-        query = {'eid': eid, 'typ': 'tianyancha', 'search': response.meta['search_key']}
+        query = {'eid': eid, 'typ': self._typ, 'search': response.meta['search_key']}
 
         industry = ''
         partition_regex = re.compile(ur'[:：]', re.S)
@@ -167,8 +172,6 @@ class TianyanchaSpider(scrapy.Spider):
         return int(total)
 
     def parse_other_investment_corps(self, response):
-        print response.body
-
         other_invest_corps = self.parse_invest_corps(response)
         document = response.meta['tyc_doc']
         document['invests'].extend(other_invest_corps)
@@ -181,11 +184,6 @@ class TianyanchaSpider(scrapy.Spider):
         search = document['search']
         query = {'eid': document['eid'], 'typ': typ, 'search': search}
         self.db.update(query, document, upsert=True)
-
-        self.schedule_db.insert({
-            'typ': typ, 'upt': datetime.now()
-        })
-
 
     @staticmethod
     def close(spider, reason):
