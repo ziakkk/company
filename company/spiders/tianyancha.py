@@ -5,10 +5,13 @@ import urllib
 import time
 from copy import deepcopy
 from datetime import datetime
+from random import choice
 
 import scrapy
 from pymongo import MongoClient
 from fake_useragent import UserAgent
+
+from company.defaults import USER_AGENT
 
 
 class TianyanchaSpider(scrapy.Spider):
@@ -27,7 +30,7 @@ class TianyanchaSpider(scrapy.Spider):
         self.log('Search Word type: {}'.format(type(self.search_key)), 20)
 
         self._headers = {
-            'User-Agent': self.user_agent,
+            'User-Agent': choice(USER_AGENT),
             'Host': 'www.tianyancha.com',
             'Upgrade-Insecure-Requests': '1'
         }
