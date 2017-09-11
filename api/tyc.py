@@ -66,7 +66,7 @@ def interval_seconds(from_typ='tianyancha'):
 @app.route(r'/api/corp/search', methods=['GET'])
 def get_corp_info():
     project = 'company'
-    scrapyd = ScrapydAPI('http://192.168.216.170:6800')
+    scrapyd = ScrapydAPI()
     word = request.args.get('word')
     resp = {'result': {}, 'is_success': False, 'message': ''}
 
