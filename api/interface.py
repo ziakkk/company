@@ -15,6 +15,9 @@ from scrapyd_api import ScrapydAPI
 
 from api import app
 
+INTERVAL_DICT = {'tianyancha': 15, 'qixin': 30}
+TIMES_PER_MINUTE = {'tianyancha': 3, 'qixin': 1.5}
+
 
 def get_data_from_db(search):
     client = MongoClient()
@@ -40,7 +43,6 @@ def interval_seconds(from_typ='tianyancha'):
     """
 
     schedule_list = []
-    interval_dict = {'tianyancha': 15}
 
     client = MongoClient()
     db = client.crawl.corp_schedule
@@ -55,8 +57,18 @@ def interval_seconds(from_typ='tianyancha'):
     if not schedule_list:
         return True, 0
 
+    if from_typ == 'tianyancha':
+        times = schedule_list[:10]
+    elif from_typ in ['qixin', 'qichacha']:
+        times = schedule_list[:5]
+
+    freq = (times[0]['upt'] - times[-1]['upt']).total_seconds() / 60.0
     diff_seconds = (datetime.now() - schedule_list[0]['upt']).total_seconds()
-    remaining_seconds = diff_seconds - interval_dict[from_typ]
+    remaining_seconds = diff_seconds - INTERVAL_DICT[from_typ]
+
+    if freq > TIMES_PER_MINUTE[from_typ]:
+        return False, 5
+
     if remaining_seconds > 0:
         return True, 0
 
@@ -68,6 +80,7 @@ def get_corp_info():
     project = 'company'
     scrapyd = ScrapydAPI()
     word = request.args.get('word')
+    from_typ = request.args.get('typ', 'tianyancha')
     resp = {'result': {}, 'is_success': False, 'message': ''}
 
     if word is None:
@@ -80,15 +93,15 @@ def get_corp_info():
         resp['result'].update(result)
         return jsonify(resp)
 
-    interval = interval_seconds()
+    interval = interval_seconds(from_typ)
     if not interval[0]:
         resp['message'] = u'调用频繁: {}s 后再调用!'.format(interval[1])
         return jsonify(resp)
 
     start_time = time.time()
-    jobid = scrapyd.schedule(project, spider='tianyancha', search=word.encode('u8'))
+    jobid = scrapyd.schedule(project, spider=from_typ, search=word.encode('u8'))
 
-    while (time.time() - start_time) <= 15:
+    while (time.time() - start_time) <= INTERVAL_DICT[from_typ]:
         time.sleep(1)
         state = scrapyd.job_status(project, job_id=jobid)
         crawled_result = get_data_from_db(word)

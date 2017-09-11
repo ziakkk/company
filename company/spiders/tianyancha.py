@@ -107,6 +107,9 @@ class TianyanchaSpider(scrapy.Spider):
         document.update({'corp_name': corp_name, 'is_site': is_site, 'ind': industry})
 
         # 是否有分支机构、失信信息、股权出质、动产抵押、对外投资、招投标信息
+        fields = ['is_branch', 'is_credit', 'is_stock_pledge', 'is_chattel_mortgage', 'is_invest_abroad', 'is_bid']
+        document.update(dict(zip(fields, [False] * len(fields))))
+
         selector = 'div.company-main div.nav_item_Box div.nav-item-p.text-left div.position-rel'
         for is_sel in response.css(selector):
             key = None
