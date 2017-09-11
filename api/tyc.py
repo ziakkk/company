@@ -94,13 +94,13 @@ def get_corp_info():
         crawled_result = get_data_from_db(word)
 
         if state == 'finished':
-            result['is_success'] = True
+            resp['is_success'] = True
             resp['result'] = crawled_result
 
             if crawled_result:
-                result['message'] = u'爬虫完成：获取数据成功!'
+                resp['message'] = u'爬虫完成：获取数据成功!'
             else:
-                result['message'] = u'爬虫完成: 未获取数据!'
+                resp['message'] = u'爬虫完成: 未获取数据!'
 
             break
 
