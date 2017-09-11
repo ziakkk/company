@@ -202,6 +202,6 @@ if __name__ == '__main__':
     from scrapy.utils.project import get_project_settings
 
     crawler = CrawlerProcess(get_project_settings())
-    crawler.crawl(TianyanchaSpider, search=u'百度')
+    crawler.crawl(TianyanchaSpider, search=u'百度'.encode('u8'))
     crawler.start()
 
