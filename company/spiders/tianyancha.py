@@ -20,7 +20,7 @@ class TianyanchaSpider(scrapy.Spider):
         self.cookie = kwargs.pop('cookie', None)
         self.user_agent = UserAgent().random
 
-        self.log('Search Word: {}, type: {}'.format(self.search_key, type(self.search_key)))
+        self.log('Search Word: {}, type: {}'.format(self.search_key, type(self.search_key)), 20)
 
         self._headers = {
             'User-Agent': self.user_agent,
