@@ -70,14 +70,14 @@ class QixinSpider(scrapy.Spider):
         yield scrapy.Request(search_url, headers=headers, cookies=self.cookies)
 
     def parse(self, response):
-        print 'h1:', response.request.headers
-        print 'h1:', response.request.cookies
+        # print 'h1:', response.request.headers
+        # print 'h1:', response.request.cookies
         # print response.body
 
         href = response.css('div#s2-c1 div.company-title > a::attr(href)').extract_first()
-        print 'href:', href
+        # print 'href:', href
         eid = self.get_eid(href)
-        print 'eid:', eid
+        # print 'eid:', eid
 
         if eid is None:
             return
@@ -99,7 +99,7 @@ class QixinSpider(scrapy.Spider):
         industry = ''
         risk_url = 'http://www.qixin.com/company-risk/{}'.format(response.meta['result']['eid'])
         name = response.css('div.container div[class="row"] h3::text').extract_first() or ''
-        print 'name:', name
+        # print 'name:', name
 
         for tr_sel in response.css('div#icinfo table tr'):
             is_break = False
@@ -178,7 +178,7 @@ class QixinSpider(scrapy.Spider):
 
         investment = response.css('div#s2-c0 h4.section-title span.badge::text').extract_first() or '0'
         investment_count = int(investment.strip().replace(' ', '')) - 10
-        print 'invest:', investment, investment_count
+        # print 'invest:', investment, investment_count
 
         for sel in response.css('div.app-investment-list div.investment-item'):
             name = sel.css('div.col-2 > div.col-2-1 > div:first-child > h5 > a::text').extract_first() or ''
@@ -246,6 +246,7 @@ class QixinSpider(scrapy.Spider):
         document['typ'] = self._typ
         document['search'] = self.search_key
         document['upt'] = datetime.now()
+        document['is_invest_abroad'] = bool(self.invests)
 
         query = {'eid': document['eid'], 'typ': self._typ, 'search': self.search_key}
         self.db.update(query, document, upsert=True)
