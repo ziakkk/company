@@ -15,8 +15,8 @@ from scrapyd_api import ScrapydAPI
 
 from api import app
 
-INTERVAL_DICT = {'tianyancha': 15, 'qixin': 30, 'qichacha': 20}
-TIMES_PER_MINUTE = {'tianyancha': 3, 'qixin': 1.5, 'qichacha': 2.5}
+INTERVAL_DICT = {'tianyancha': 15, 'qixin': 30, 'qichacha': 30}
+TIMES_PER_MINUTE = {'tianyancha': 3, 'qixin': 1.5, 'qichacha': 1.5}
 
 
 def get_data_from_db(search):

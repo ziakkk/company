@@ -14,7 +14,7 @@ from company import defaults
 class QichachaSpider(scrapy.Spider):
     name = 'qichacha'
     allowed_domains = ['www.qichacha.com']
-    custom_settings = {'DOWNLOAD_DELAY': 1.5}
+    custom_settings = {'DOWNLOAD_DELAY': 1.9}
 
     def __init__(self, **kwargs):
         self._typ = 'qichacha'
@@ -90,32 +90,14 @@ class QichachaSpider(scrapy.Spider):
         })
 
     def parse_corp(self, response):
-        industry = ''
-
-        for tr_sel in response.css('table.m_changeList tr'):
-            is_break = False
-            text_list = tr_sel.css('td::text').extract()
-
-            for index, text in enumerate(text_list):
-                if u'所属行业' in text:
-                    is_break = True
-                    industry = text_list[index + 1]
-                    break
-
-            if is_break:
-                break
-
         name = (response.css('div.company-top-name::text').extract_first() or '').strip()
         is_site = bool(response.css('a.company-top-url::attr(href)').extract_first())
-        is_branch = bool(response.css('section#Subcom div.panel-heading span.badge').extract_first())
 
         if not name:
             return
 
         name_urlencode = urllib.quote(name.encode('u8'))
-        response.meta['result'].update({
-            'name': name, 'is_branch': is_branch, 'is_site': is_site, 'ind': industry
-        })
+        response.meta['result'].update({'name': name, 'is_site': is_site})
         response.meta['name_urlencode'] = name_urlencode
 
         headers = deepcopy(self._headers)
@@ -123,8 +105,43 @@ class QichachaSpider(scrapy.Spider):
         headers.pop('Upgrade-Insecure-Requests')
         headers['X-Requested-With'] = 'XMLHttpRequest'
 
-        risk_url = 'http://www.qichacha.com/company_getinfos?unique={}&companyname={}&tab=susong'.format(
+        corp_detail_url = 'http://www.qichacha.com/company_getinfos?unique={}&companyname={}&tab=base'.format(
             response.meta['result']['eid'], name_urlencode
+        )
+
+        yield scrapy.Request(
+            corp_detail_url, meta=response.meta,
+            headers=headers, cookies=self.cookies, callback=self.parse_corp_detail
+        )
+
+    def parse_corp_detail(self, response):
+        industry = ''
+
+        # 所属行业
+        for tr_sel in response.css('table.m_changeList tr'):
+            is_break = False
+            text_list = tr_sel.css('td::text').extract()
+
+            for index, text in enumerate(text_list):
+                if u'所属行业' in text:
+                    is_break = True
+                    industry = text_list[index + 1].strip()
+                    break
+
+            if is_break:
+                break
+
+        # 分支机构
+        is_branch = bool(response.css('section#Subcom div.panel-heading span.badge').extract_first())
+        response.meta['result'].update({'is_branch': is_branch, 'ind': industry})
+
+        headers = deepcopy(self._headers)
+        headers.pop('Upgrade-Insecure-Requests')
+        headers['X-Requested-With'] = 'XMLHttpRequest'
+        headers['Referer'] = ''.join(response.request.headers['Referer'])
+
+        risk_url = 'http://www.qichacha.com/company_getinfos?unique={}&companyname={}&tab=susong'.format(
+            response.meta['result']['eid'], response.meta['name_urlencode']
         )
 
         yield scrapy.Request(
@@ -135,7 +152,7 @@ class QichachaSpider(scrapy.Spider):
     def parse_risk_info(self, response):
         # 失信信息
         is_credit = bool(response.css('section#shixinlist div.panel-heading span.badge').extract_first())
-        operation_url = 'http://www.qichacha.com/company_getinfos?unique=&companyname=&tab=run'.format(
+        operation_url = 'http://www.qichacha.com/company_getinfos?unique={}&companyname={}&tab=run'.format(
             response.meta['result']['eid'], response.meta['name_urlencode']
         )
 
@@ -249,7 +266,7 @@ if __name__ == '__main__':
     from scrapy.utils.project import get_project_settings
 
     crawler = CrawlerProcess(get_project_settings())
-    crawler.crawl(QichachaSpider, search='阿里巴巴')
+    crawler.crawl(QichachaSpider, search=u'百度')
     crawler.start()
 
 
