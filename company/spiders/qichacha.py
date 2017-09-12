@@ -197,7 +197,9 @@ class QichachaSpider(scrapy.Spider):
 
             self.invests.append({'name': name, 'capital': capital, 'time': _time})
 
-        if is_last_page:
+        investment_count = int(response.css('div.panel-heading span.badge::text').extract_first() or '0') - 20
+
+        if is_last_page or investment_count <= 0:
             response.meta['result']['invests'] = self.invests
             self.insert_db(response.meta['result'])
             return
@@ -212,11 +214,6 @@ class QichachaSpider(scrapy.Spider):
         other_invest_url = 'http://www.qichacha.com/company_getinfos?unique={}&companyname={}&p={}&tab=touzi&box=touzi'
 
         if not is_investment:
-            investment_count = int(response.css('div.panel-heading span.badge::text').extract_first() or '0') - 20
-
-            if investment_count <= 0:
-                return
-
             pages = investment_count / 20 + bool(investment_count % 20)
 
             for page in range(1, pages + 1):
