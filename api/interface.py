@@ -89,6 +89,7 @@ def get_corp_info():
 
     result = get_data_from_db(word)
     if result:
+        resp['is_success'] = True
         resp['message'] = u'调用成功!'
         resp['result'].update(result)
         return jsonify(resp)
