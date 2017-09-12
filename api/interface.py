@@ -46,7 +46,7 @@ def interval_seconds(from_typ='tianyancha'):
 
     client = MongoClient()
     db = client.crawl.corp_schedule
-    cursor = db.find({'typ': from_typ}).sort([('upt', -1)]).limit(20)
+    cursor = db.find({'typ': from_typ}).sort([('upt', -1)]).limit(15)
 
     for index, doc in enumerate(cursor):
         doc.pop('_id', None)
@@ -57,17 +57,23 @@ def interval_seconds(from_typ='tianyancha'):
     if not schedule_list:
         return True, 0
 
+    current_dt = datetime.now()
+
     if from_typ == 'tianyancha':
         times = schedule_list[:10]
     elif from_typ in ['qixin', 'qichacha']:
         times = schedule_list[:5]
+    else:
+        times = [{'upt': current_dt}]
 
-    freq = (times[0]['upt'] - times[-1]['upt']).total_seconds() / 60.0
-    diff_seconds = (datetime.now() - schedule_list[0]['upt']).total_seconds()
+    diff_reqp_time = (current_dt - times[-1]['upt']).total_seconds()
+    freq = diff_reqp_time / 60.0
+
+    diff_seconds = (current_dt - schedule_list[0]['upt']).total_seconds()
     remaining_seconds = diff_seconds - INTERVAL_DICT[from_typ]
 
-    if freq > TIMES_PER_MINUTE[from_typ]:
-        return False, 5
+    if 0.0 < freq < TIMES_PER_MINUTE[from_typ]:
+        return False, 150 - diff_reqp_time
 
     if remaining_seconds > 0:
         return True, 0
