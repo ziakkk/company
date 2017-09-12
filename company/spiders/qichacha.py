@@ -179,7 +179,8 @@ class QichachaSpider(scrapy.Spider):
 
         # 动产抵押
         for text in response.css('div.panel-body a.m-r-sm.m-t-sm::text').extract():
-            if u'动产抵押' in text and re.compile(r'\d+').search(text):
+            m = re.compile(r'\d+').search(text)
+            if u'动产抵押' in text and m and int(m.group()):
                 is_chattel_mortgage = True
                 break
 
