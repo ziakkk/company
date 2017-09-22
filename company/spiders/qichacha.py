@@ -43,7 +43,6 @@ class QichachaSpider(scrapy.Spider):
         parse_cookie_str = (lambda _c: dict([ck.split('=', 1) for ck in _c.split(';')]))
 
         if self._cookies is None:
-            now = datetime.now()
             cookie_db = self.client.crawl.corp_cookies
             cursor = [d for d in cookie_db.find().sort([('crt', -1)]).limit(1000)]
 
@@ -61,16 +60,16 @@ class QichachaSpider(scrapy.Spider):
                 else:
                     # 匹配间隔时间不小于30s的记录
                     used_cookies = [(k, v[0]['crt']) for k, v in sorted_dict.iteritems()
-                                    if (now - v[0]['crt']).total_seconds() > 30
+                                    if (datetime.now() - v[0]['crt']).total_seconds() > 30.0
                                     ]
                     if not used_cookies:
                         return
 
-                    sorted_cookies_items = sorted(used_cookies, key=lambda item: item[1])
+                    sorted_cookies_items = sorted(used_cookies, key=lambda item: item[1], reverse=True)
                     pk = sorted_cookies_items[0][0]
 
             self._cookies = cookies_dict[pk]
-            cookie_db.insert_one({'typ': self.name, 'phone': pk, 'crt': now})
+            cookie_db.insert_one({'typ': self.name, 'phone': pk, 'crt': datetime.now()})
 
         return parse_cookie_str(self._cookies)
 
