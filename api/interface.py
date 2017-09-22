@@ -15,7 +15,7 @@ from scrapyd_api import ScrapydAPI
 
 from api import app
 
-INTERVAL_DICT = {'tianyancha': 15, 'qixin': 30, 'qichacha': 30}
+INTERVAL_DICT = {'tianyancha': 15, 'qixin': 20, 'qichacha': 15}
 TIMES_PER_MINUTE = {'tianyancha': 3, 'qixin': 1.5, 'qichacha': 1.5}
 
 

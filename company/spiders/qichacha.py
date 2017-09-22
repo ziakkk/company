@@ -14,11 +14,11 @@ from company import defaults
 class QichachaSpider(scrapy.Spider):
     name = 'qichacha'
     allowed_domains = ['www.qichacha.com']
-    custom_settings = {'DOWNLOAD_DELAY': 1.9}
+    custom_settings = {'DOWNLOAD_DELAY': 1.8}
 
     def __init__(self, **kwargs):
         self._typ = 'qichacha'
-        self._cookie = kwargs.pop('cookie', None)
+        self._cookies = kwargs.pop('cookie', None)
         self.search_key = kwargs.pop('search', None)
         self.user_agent = choice(defaults.USER_AGENT)
         self.invests = []
@@ -38,8 +38,41 @@ class QichachaSpider(scrapy.Spider):
 
     @property
     def cookies(self):
-        cookies = self._cookie or self.settings['QICHACHA_COOKIE']
-        return dict([ck.split('=', 1) for ck in cookies.split(';')])
+        doc_dict = {}
+        cookies_dict = deepcopy(self.settings['QICHACHA_COOKIE'])
+        parse_cookie_str = (lambda _c: dict([ck.split('=', 1) for ck in _c.split(';')]))
+
+        if self._cookies is None:
+            now = datetime.now()
+            cookie_db = self.client.crawl.corp_cookies
+            cursor = [d for d in cookie_db.find().sort([('crt', -1)]).limit(1000)]
+
+            for doc in cursor:
+                doc_dict.setdefault(doc['phone'], []).append(doc)
+
+            sorted_dict = {k: sorted(v, key=lambda _d: _d['crt']) for k, v in doc_dict.iteritems()}
+            diff_keys = set(cookies_dict) - set(sorted_dict)
+
+            if not cursor:
+                pk = choice(cookies_dict.keys())  # 表为空
+            else:
+                if diff_keys:
+                    pk = choice(list(diff_keys))
+                else:
+                    # 匹配间隔时间不小于30s的记录
+                    used_cookies = [(k, v[0]['crt']) for k, v in sorted_dict.iteritems()
+                                    if (now - v[0]['crt']).total_seconds() > 30
+                                    ]
+                    if not used_cookies:
+                        return
+
+                    sorted_cookies_items = sorted(used_cookies, key=lambda item: item[1])
+                    pk = sorted_cookies_items[0][0]
+
+            self._cookies = cookies_dict[pk]
+            cookie_db.insert_one({'typ': self.name, 'phone': pk, 'crt': now})
+
+        return parse_cookie_str(self._cookies)
 
     @staticmethod
     def get_eid(url):
@@ -65,8 +98,12 @@ class QichachaSpider(scrapy.Spider):
 
         key_urlencode = '%' in word and urllib.quote(word) or word
         search_url = 'http://www.qichacha.com/search?key={}'.format(key_urlencode)
+        cookies = self.cookies
 
-        yield scrapy.Request(search_url, headers=headers, cookies=self.cookies)
+        if not cookies:
+            return
+
+        yield scrapy.Request(search_url, headers=headers, cookies=cookies)
 
     def parse(self, response):
         target_css = 'table.m_srchList > tbody > tr:first-child > td:nth-child(2) > a::attr(href)'
@@ -79,10 +116,14 @@ class QichachaSpider(scrapy.Spider):
         url = response.urljoin(href)
         headers = deepcopy(self._headers)
         headers['Referer'] = response.url
+        cookies = self.cookies
+
+        if not cookies:
+            return
 
         yield scrapy.Request(
             url, meta={'result': {'eid': eid}},
-            headers=headers, cookies=self.cookies, callback=self.parse_corp
+            headers=headers, cookies=cookies, callback=self.parse_corp
         )
 
         self.schedule_db.insert({
@@ -109,9 +150,14 @@ class QichachaSpider(scrapy.Spider):
             response.meta['result']['eid'], name_urlencode
         )
 
+        cookies = self.cookies
+
+        if not cookies:
+            return
+
         yield scrapy.Request(
             corp_detail_url, meta=response.meta,
-            headers=headers, cookies=self.cookies, callback=self.parse_corp_detail
+            headers=headers, cookies=cookies, callback=self.parse_corp_detail
         )
 
     def parse_corp_detail(self, response):
@@ -144,9 +190,14 @@ class QichachaSpider(scrapy.Spider):
             response.meta['result']['eid'], response.meta['name_urlencode']
         )
 
+        cookies = self.cookies
+
+        if not cookies:
+            return
+
         yield scrapy.Request(
             risk_url, meta=response.meta,
-            headers=headers, cookies=self.cookies, callback=self.parse_risk_info
+            headers=headers, cookies=cookies, callback=self.parse_risk_info
         )
 
     def parse_risk_info(self, response):
@@ -163,9 +214,14 @@ class QichachaSpider(scrapy.Spider):
 
         response.meta['result']['is_credit'] = is_credit
 
+        cookies = self.cookies
+
+        if not cookies:
+            return
+
         yield scrapy.Request(
             operation_url, meta=response.meta,
-            headers=headers, cookies=self.cookies, callback=self.parse_operation
+            headers=headers, cookies=cookies, callback=self.parse_operation
         )
 
     def parse_operation(self, response):
@@ -196,9 +252,14 @@ class QichachaSpider(scrapy.Spider):
         headers['X-Requested-With'] = 'XMLHttpRequest'
         headers['Referer'] = ''.join(response.request.headers['Referer'])
 
+        cookies = self.cookies
+
+        if not cookies:
+            return
+
         yield scrapy.Request(
             investment_url, meta=response.meta,
-            headers=headers, cookies=self.cookies, callback=self.parse_investment
+            headers=headers, cookies=cookies, callback=self.parse_investment
         )
 
     def parse_investment(self, response):
@@ -239,9 +300,14 @@ class QichachaSpider(scrapy.Spider):
                 meta['is_investment'] = True
                 meta['is_last_page'] = page == pages
 
+                cookies = self.cookies
+
+                if not cookies:
+                    return
+
                 yield scrapy.Request(
                     other_invest_url.format(eid, name_urlencode, page + 1),
-                    meta=meta, headers=headers, cookies=self.cookies, callback=self.parse_investment
+                    meta=meta, headers=headers, cookies=cookies, callback=self.parse_investment
                 )
 
     def insert_db(self, document):
