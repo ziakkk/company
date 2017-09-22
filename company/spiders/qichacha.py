@@ -49,7 +49,7 @@ class QichachaSpider(scrapy.Spider):
             for doc in cursor:
                 doc_dict.setdefault(doc['phone'], []).append(doc)
 
-            sorted_dict = {k: sorted(v, key=lambda _d: _d['crt']) for k, v in doc_dict.iteritems()}
+            sorted_dict = {k: sorted(v, key=lambda _d: _d['crt'], reverse=True) for k, v in doc_dict.iteritems()}
             diff_keys = set(cookies_dict) - set(sorted_dict)
 
             if not cursor:
@@ -65,7 +65,7 @@ class QichachaSpider(scrapy.Spider):
                     if not used_cookies:
                         return
 
-                    sorted_cookies_items = sorted(used_cookies, key=lambda item: item[1], reverse=True)
+                    sorted_cookies_items = sorted(used_cookies, key=lambda item: item[1])
                     pk = sorted_cookies_items[0][0]
 
             self._cookies = cookies_dict[pk]
