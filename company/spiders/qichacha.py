@@ -49,8 +49,8 @@ class QichachaSpider(scrapy.Spider):
             for doc in cursor:
                 doc_dict.setdefault(doc['phone'], []).append(doc)
 
-            sorted_dict = {k: sorted(v, key=lambda _d: _d['crt'], reverse=True) for k, v in doc_dict.iteritems()}
-            diff_keys = set(cookies_dict) - set(sorted_dict)
+            # sorted_dict = {k: sorted(v, key=lambda _d: _d['crt']) for k, v in doc_dict.iteritems()}
+            diff_keys = set(cookies_dict) - set(doc_dict)
 
             if not cursor:
                 pk = choice(cookies_dict.keys())  # 表为空
@@ -58,10 +58,12 @@ class QichachaSpider(scrapy.Spider):
                 if diff_keys:
                     pk = choice(list(diff_keys))
                 else:
+                    now = datetime.now()
                     # 匹配间隔时间不小于30s的记录
-                    used_cookies = [(k, v[0]['crt']) for k, v in sorted_dict.iteritems()
-                                    if (datetime.now() - v[0]['crt']).total_seconds() > 30.0
+                    used_cookies = [(k, v[0]['crt']) for k, v in doc_dict.iteritems()
+                                    if (now - v[0]['crt']).total_seconds() > 30.0
                                     ]
+
                     if not used_cookies:
                         return
 
