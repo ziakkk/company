@@ -133,6 +133,7 @@ class QichachaSpider(scrapy.Spider):
 
     def parse_corp(self, response):
         name = (response.css('div.company-top-name::text').extract_first() or '').strip()
+        name = name.replace(u'（', '(').replace(u'）', ')')
         is_site = bool(response.css('a.company-top-url::attr(href)').extract_first())
 
         if not name:
