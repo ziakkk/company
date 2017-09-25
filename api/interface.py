@@ -2,6 +2,7 @@
 
 import os
 import sys
+import re
 import time
 from datetime import datetime
 
@@ -22,7 +23,10 @@ TIMES_PER_MINUTE = {'tianyancha': 3, 'qixin': 1.5, 'qichacha': 1.5}
 def get_data_from_db(search):
     client = MongoClient()
     db = client.crawl.corp_info
-    cursor = db.find({'search': search})
+    cursor = db.find({'$or': [
+        {'search': {'$regex': re.compile(ur'%s' % search)}},
+        {'name': {'$regex': re.compile(ur'%s' % search)}},
+    ]})
 
     documents = sorted(cursor, key=lambda _doc: _doc['upt'], reverse=True)
     doc = documents[0] if documents else {}
